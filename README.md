@@ -43,6 +43,7 @@ All important parts and files for building an addressable led ring which can be 
     - Hour (warmwhite): ```color5 00FFFF```
     - Marker (off): ```color6 000000```
   - Let second hand turn red if CO2 levels too high: ```Rule1 on SCD40#CarbonDioxide>1000 do color3 #FF0000 endon on SCD40#CarbonDioxide<=1000 do color3 #FFFFFF endon"```
+  - Rotate around 60 pixels: ```rotation 60```
 
 #### Tasmota module config
   - D2 -> I2C SDA
