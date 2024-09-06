@@ -1,6 +1,6 @@
 # Lightring
 
-All important parts and files for building an addressable led ring which can be used for displaying the time. This is NOT a complete guide for how to build it yourself and rather a (hopefully helpful) list on what things are needed for someone with sufficient background knowledge interested in building this or something similar.
+All important parts and files for building an addressable smart led ring which can be used for displaying the time. This is NOT a complete guide for how to build it yourself and rather a (hopefully helpful) list on what things are needed for someone with sufficient background knowledge interested in building this or something similar.
 
 ![Lightring](images/lightring.jpg)
 
