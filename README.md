@@ -30,6 +30,7 @@ All important parts and files for building an addressable led ring which can be 
 - BH1750 sensor [link](https://de.aliexpress.com/item/32672074071.html?spm=a2g0o.order_list.order_list_main.46.18c45c5fDkONT1&gatewayAdapt=glo2deu)
 
 #### Software
+  - ESP Home: `esphome run lightring.yml`
   - [Custom Tasmota version](https://github.com/stephanballer/lightring_tasmota)
 
 #### Useful commands to configure Tasmota

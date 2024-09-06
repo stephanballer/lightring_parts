@@ -1,0 +1,165 @@
+esphome:
+  name: lightring
+  on_boot:
+    - light.turn_on: 
+        id: leds
+        effect: "Clock"
+
+api:
+  services:
+    - service: calibrate_co2_value
+      variables:
+        co2_ppm: int
+      then:
+      - scd4x.perform_forced_calibration:
+          value: !lambda 'return co2_ppm;'
+          id: scd
+
+ota:
+  - platform: esphome
+
+esp8266:
+  board: nodemcuv2
+  framework:
+    version: recommended
+
+wifi:
+  ssid: <ssid>
+  password: <password>
+
+e131:
+  method: multicast
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+i2c:
+  sda: GPIO4
+  scl: GPIO5
+  scan: true
+  id: bus_a
+
+sensor:
+  - platform: bh1750
+    id: bh
+    i2c_id: bus_a
+    name: "Illuminance"
+    address: 0x23
+    update_interval: 2s
+  - platform: scd4x
+    id: scd
+    i2c_id: bus_a
+    co2:
+      name: "CO2"
+      id: scd_co2
+    temperature:
+      name: "Temperature"
+    humidity:
+      name: "Humidity"
+    temperature_offset: 9.2 °C
+    measurement_mode: low_power_periodic
+    update_interval: 30s
+
+light:
+  - platform: neopixelbus
+    type: GRBW
+    id: leds
+    variant: SK6812
+    pin: GPIO14
+    num_leds: 240
+    name: "Lightring"
+    on_turn_on:
+      then:
+        - light.control:
+            id: leds
+            effect: Clock
+    effects:
+      - addressable_lambda:
+          name: "Clock"
+          update_interval: 64ms
+          lambda: |-
+            int half_pixels = it.size()/2;
+            int rotation = half_pixels/2;
+            auto time = id(sntp_time).now();
+            int start_h = ((2 * time.hour + 23) * (half_pixels/24)) % half_pixels;
+            int start_m = (2 * time.minute + 119) * (half_pixels/120) % half_pixels;
+            int start_s = (2 * time.second + 119) * (half_pixels/120) % half_pixels;
+            //int start_s = ((millis() % 60000) / 500 + 119) * (half_pixels/120) % half_pixels;
+
+            float br;
+            if (id(bh).state > 33) {
+              br = 1.0;
+            }
+            else if (id(bh).state < 1) {
+              br = 0.03 * 4;
+            }
+            else {
+              br = (3.0 * id(bh).state) / 100.0;
+            }
+
+            Color color_s;
+            if (id(scd_co2).state > 1200) {
+              color_s = Color(255,0,0,0);
+            }
+            else if (id(scd_co2).state < 800) {
+              color_s = Color(255,255,255,0);
+            }
+            else {
+              uint8_t c = 255 - (((id(scd_co2).state - 800) * 255) / 400);
+              color_s = Color(255,c,c,0);
+            }
+            Color color_m = Color(0,0,0,255);
+            Color color_h = Color(0,0,0,255);
+
+            Color buf[it.size()];
+            for (int i = 0; i < it.size(); i++) {
+              buf[i] = Color::BLACK;
+            }
+            for (int i = 0; i < half_pixels/12; i++) {
+              buf[half_pixels + ((rotation + start_h + i) % half_pixels)] += color_h;
+            }
+            for (int i = 0; i < half_pixels/60; i++) {
+              buf[(rotation + start_m + i) % half_pixels] += color_m;
+            }
+            for (int i = 0; i < half_pixels/60; i++) {
+              buf[(rotation + start_s + i) % half_pixels] += color_s;
+            }
+            for (int i = 0; i < half_pixels/60; i++) {
+              buf[half_pixels + ((rotation + start_s + i) % half_pixels)] += color_s;
+            }
+
+            if (br > 0.5) {
+              for (int i = 0; i < it.size(); i++) {
+                it[i] = Color(
+                  0.25 * buf[i].r * br + 0.75 * it[i].get_red(),
+                  0.25 * buf[i].g * br + 0.75 * it[i].get_green(),
+                  0.25 * buf[i].b * br + 0.75 * it[i].get_blue(),
+                  0.25 * buf[i].w * br + 0.75 * it[i].get_white()
+                );
+              }
+            }
+            else {
+              for (int i = 0; i < it.size(); i++) {
+                it[i] = Color(
+                  buf[i].r * br,
+                  buf[i].g * br,
+                  buf[i].b * br,
+                  buf[i].w * br
+                );
+              }
+            }
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - e131:
+          universe: 1
+          channels: RGBW
